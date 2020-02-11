@@ -34,7 +34,7 @@ class BaseEndpoint:
         if valid_request_methods is not None:
             valid_request_methods = [x.upper() for x in valid_request_methods]
         self._valid_request_methods = valid_request_methods
-    
+
 
     @property
     def available(self):
@@ -42,7 +42,7 @@ class BaseEndpoint:
 
     @available.setter
     def available(self, available):
-        self._available = available       
+        self._available = available
 
     @property
     def catch_errors(self):
@@ -57,13 +57,13 @@ class BaseEndpoint:
         if not request.token:
             raise InvalidRequestError(request=request,
                                       description='Missing token parameter.')
-    def _raise_on_invalid_client(self, request):
+    async def _raise_on_invalid_client(self, request):
         """Raise on failed client authentication."""
-        if self.request_validator.client_authentication_required(request):
-            if not self.request_validator.authenticate_client(request):
+        if await self.request_validator.client_authentication_required(request):
+            if not await self.request_validator.authenticate_client(request):
                 log.debug('Client authentication failed, %r.', request)
                 raise InvalidClientError(request=request)
-        elif not self.request_validator.authenticate_client_id(request.client_id, request):
+        elif not await self.request_validator.authenticate_client_id(request.client_id, request):
             log.debug('Client authentication failed, %r.', request)
             raise InvalidClientError(request=request)
 

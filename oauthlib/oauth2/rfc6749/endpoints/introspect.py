@@ -46,7 +46,7 @@ class IntrospectEndpoint(BaseEndpoint):
             supported_token_types or self.valid_token_types)
 
     @catch_errors_and_unavailability
-    def create_introspect_response(self, uri, http_method='POST', body=None,
+    async def create_introspect_response(self, uri, http_method='POST', body=None,
                                    headers=None):
         """Create introspect valid or invalid response
 
@@ -62,14 +62,14 @@ class IntrospectEndpoint(BaseEndpoint):
         }
         request = Request(uri, http_method, body, headers)
         try:
-            self.validate_introspect_request(request)
+            await self.validate_introspect_request(request)
             log.debug('Token introspect valid for %r.', request)
         except OAuth2Error as e:
             log.debug('Client error during validation of %r. %r.', request, e)
             resp_headers.update(e.headers)
             return resp_headers, e.json, e.status_code
 
-        claims = self.request_validator.introspect_token(
+        claims = await self.request_validator.introspect_token(
             request.token,
             request.token_type_hint,
             request
@@ -80,7 +80,7 @@ class IntrospectEndpoint(BaseEndpoint):
             claims.pop("active")
         return resp_headers, json.dumps(dict(active=True, **claims)), 200
 
-    def validate_introspect_request(self, request):
+    async def validate_introspect_request(self, request):
         """Ensure the request is valid.
 
         The protected resource calls the introspection endpoint using
@@ -119,5 +119,5 @@ class IntrospectEndpoint(BaseEndpoint):
         self._raise_on_bad_method(request)
         self._raise_on_bad_post_request(request)
         self._raise_on_missing_token(request)
-        self._raise_on_invalid_client(request)
+        await self._raise_on_invalid_client(request)
         self._raise_on_unsupported_token(request)

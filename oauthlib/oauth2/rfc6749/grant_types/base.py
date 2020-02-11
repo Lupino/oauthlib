@@ -149,29 +149,29 @@ class GrantTypeBase:
         token.update(token_handler.create_token(request, refresh_token=False))
         return token
 
-    def validate_grant_type(self, request):
+    async def validate_grant_type(self, request):
         """
         :param request: OAuthlib request.
         :type request: oauthlib.common.Request
         """
         client_id = getattr(request, 'client_id', None)
-        if not self.request_validator.validate_grant_type(client_id,
+        if not await self.request_validator.validate_grant_type(client_id,
                                                           request.grant_type, request.client, request):
             log.debug('Unauthorized from %r (%r) access to grant type %s.',
                       request.client_id, request.client, request.grant_type)
             raise errors.UnauthorizedClientError(request=request)
 
-    def validate_scopes(self, request):
+    async def validate_scopes(self, request):
         """
         :param request: OAuthlib request.
         :type request: oauthlib.common.Request
         """
         if not request.scopes:
             request.scopes = utils.scope_to_list(request.scope) or utils.scope_to_list(
-                self.request_validator.get_default_scopes(request.client_id, request))
+                await self.request_validator.get_default_scopes(request.client_id, request))
         log.debug('Validating access to scopes %r for client %r (%r).',
                   request.scopes, request.client_id, request.client)
-        if not self.request_validator.validate_scopes(request.client_id,
+        if not await self.request_validator.validate_scopes(request.client_id,
                                                       request.scopes, request.client, request):
             raise errors.InvalidScopeError(request=request)
 
@@ -225,7 +225,7 @@ class GrantTypeBase:
             'Pragma': 'no-cache',
         }
 
-    def _handle_redirects(self, request):
+    async def _handle_redirects(self, request):
         if request.redirect_uri is not None:
             request.using_default_redirect_uri = False
             log.debug('Using provided redirect_uri %s', request.redirect_uri)
@@ -237,11 +237,11 @@ class GrantTypeBase:
             # redirection URI registered by the client as described in
             # Section 3.1.2.
             # https://tools.ietf.org/html/rfc6749#section-3.1.2
-            if not self.request_validator.validate_redirect_uri(
+            if not await self.request_validator.validate_redirect_uri(
                     request.client_id, request.redirect_uri, request):
                 raise errors.MismatchingRedirectURIError(request=request)
         else:
-            request.redirect_uri = self.request_validator.get_default_redirect_uri(
+            request.redirect_uri = await self.request_validator.get_default_redirect_uri(
                 request.client_id, request)
             request.using_default_redirect_uri = True
             log.debug('Using default redirect_uri %s.', request.redirect_uri)

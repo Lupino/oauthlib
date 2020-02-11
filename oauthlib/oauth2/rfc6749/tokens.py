@@ -262,7 +262,7 @@ class TokenBase:
     def __call__(self, request, refresh_token=False):
         raise NotImplementedError('Subclasses must implement this method.')
 
-    def validate_request(self, request):
+    async def validate_request(self, request):
         """
         :param request: OAuthlib request.
         :type request: oauthlib.common.Request
@@ -292,7 +292,7 @@ class BearerToken(TokenBase):
         )
         self.expires_in = expires_in or 3600
 
-    def create_token(self, request, refresh_token=False, **kwargs):
+    async def create_token(self, request, refresh_token=False, **kwargs):
         """
         Create a BearerToken, by default without refresh token.
 
@@ -326,7 +326,7 @@ class BearerToken(TokenBase):
 
         if refresh_token:
             if (request.refresh_token and
-                    not self.request_validator.rotate_refresh_token(request)):
+                    not await self.request_validator.rotate_refresh_token(request)):
                 token['refresh_token'] = request.refresh_token
             else:
                 token['refresh_token'] = self.refresh_token_generator(request)
@@ -334,13 +334,13 @@ class BearerToken(TokenBase):
         token.update(request.extra_credentials or {})
         return OAuth2Token(token)
 
-    def validate_request(self, request):
+    async def validate_request(self, request):
         """
         :param request: OAuthlib request.
         :type request: oauthlib.common.Request
         """
         token = get_token_from_header(request)
-        return self.request_validator.validate_bearer_token(
+        return await self.request_validator.validate_bearer_token(
             token, request.scopes, request)
 
     def estimate_type(self, request):

@@ -102,7 +102,7 @@ class AuthorizationEndpoint(BaseEndpoint):
             request, self.default_token_type)
 
     @catch_errors_and_unavailability
-    def validate_authorization_request(self, uri, http_method='GET', body=None,
+    async def validate_authorization_request(self, uri, http_method='GET', body=None,
                                        headers=None):
         """Extract response_type and route to the designated handler."""
         request = Request(
@@ -112,4 +112,4 @@ class AuthorizationEndpoint(BaseEndpoint):
 
         response_type_handler = self.response_types.get(
             request.response_type, self.default_response_type_handler)
-        return response_type_handler.validate_authorization_request(request)
+        return await response_type_handler.validate_authorization_request(request)

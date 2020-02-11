@@ -68,7 +68,7 @@ class ResourceOwnerPasswordCredentialsGrant(GrantTypeBase):
     .. _`Resource Owner Password Credentials Grant`: https://tools.ietf.org/html/rfc6749#section-4.3
     """
 
-    def create_token_response(self, request, token_handler):
+    async def create_token_response(self, request, token_handler):
         """Return token or error in json format.
 
         :param request: OAuthlib request.
@@ -87,12 +87,12 @@ class ResourceOwnerPasswordCredentialsGrant(GrantTypeBase):
         """
         headers = self._get_default_headers()
         try:
-            if self.request_validator.client_authentication_required(request):
+            if await self.request_validator.client_authentication_required(request):
                 log.debug('Authenticating client, %r.', request)
-                if not self.request_validator.authenticate_client(request):
+                if not await self.request_validator.authenticate_client(request):
                     log.debug('Client authentication failed, %r.', request)
                     raise errors.InvalidClientError(request=request)
-            elif not self.request_validator.authenticate_client_id(request.client_id, request):
+            elif not await self.request_validator.authenticate_client_id(request.client_id, request):
                 log.debug('Client authentication failed, %r.', request)
                 raise errors.InvalidClientError(request=request)
             log.debug('Validating access token request, %r.', request)
@@ -107,13 +107,13 @@ class ResourceOwnerPasswordCredentialsGrant(GrantTypeBase):
         for modifier in self._token_modifiers:
             token = modifier(token)
 
-        self.request_validator.save_token(token, request)
+        await self.request_validator.save_token(token, request)
 
         log.debug('Issuing token %r to client id %r (%r) and username %s.',
                   token, request.client_id, request.client, request.username)
         return headers, json.dumps(token), 200
 
-    def validate_token_request(self, request):
+    async def validate_token_request(self, request):
         """
         :param request: OAuthlib request.
         :type request: oauthlib.common.Request
@@ -178,7 +178,7 @@ class ResourceOwnerPasswordCredentialsGrant(GrantTypeBase):
             raise errors.UnsupportedGrantTypeError(request=request)
 
         log.debug('Validating username %s.', request.username)
-        if not self.request_validator.validate_user(request.username,
+        if not await self.request_validator.validate_user(request.username,
                                                     request.password, request.client, request):
             raise errors.InvalidGrantError(
                 'Invalid credentials given.', request=request)
